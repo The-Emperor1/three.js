@@ -224,6 +224,11 @@ Object.assign( Vector3.prototype, {
 
 	},
 
+	/**
+	 * 向量点乘
+	 * @param {Object} a 向量a
+	 * @param {Object} b 向量b
+	 */
 	multiplyVectors: function ( a, b ) {
 
 		this.x = a.x * b.x;
