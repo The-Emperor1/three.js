@@ -49,6 +49,10 @@ Object.assign( Spherical.prototype, {
 	},
 
 	// restrict phi to be betwee EPS and PI-EPS
+	/**
+	 * 将极角 phi 的值限制在0.000001 和 pi - 0.000001 之间
+	 * @returns 返回设置后的球坐标
+	 */
 	makeSafe: function () {
 
 		var EPS = 0.000001;
@@ -58,12 +62,21 @@ Object.assign( Spherical.prototype, {
 
 	},
 
+	/**
+	 * 从Vector3中设置球坐标的radius、phi和theta值
+	 * @param {Object} v 向量v
+	 * @returns 返回设置后的球坐标 
+	 */
 	setFromVector3: function ( v ) {
 
 		return this.setFromCartesianCoords( v.x, v.y, v.z );
 
 	},
 
+	/**
+	 * 从笛卡尔坐标系中设置球坐标的radius、phi和theta值
+	 * @returns 返回设置后的球坐标
+	 */
 	setFromCartesianCoords: function ( x, y, z ) {
 
 		this.radius = Math.sqrt( x * x + y * y + z * z );
