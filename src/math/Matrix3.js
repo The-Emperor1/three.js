@@ -43,6 +43,10 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 将此矩阵重置为3x3单位矩阵
+	 * @returns {Matrix3} 返回单位化后的该矩阵
+	 */
 	identity: function () {
 
 		this.set(
@@ -110,18 +114,34 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 将当前矩阵乘以矩阵m
+	 * @param {Matrix3} m
+	 * @returns {Matrix3} 返回当前矩阵 
+	 */
 	multiply: function ( m ) {
 
 		return this.multiplyMatrices( this, m );
 
 	},
 
+	/**
+	 * 将矩阵m乘以当前矩阵
+	 * @param {Matrix3} m 
+	 * @returns {Matrix3} 返回当前矩阵
+	 */
 	premultiply: function ( m ) {
 
 		return this.multiplyMatrices( m, this );
 
 	},
 
+	/**
+	 * 设置当前矩阵为矩阵a x 矩阵b
+	 * @param {Matrix3} a 
+	 * @param {Matrix3} b 
+	 * @returns {Matrix3} 返回当前矩阵
+	 */
 	multiplyMatrices: function ( a, b ) {
 
 		var ae = a.elements;
@@ -152,6 +172,11 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 当前矩阵所有的元素乘以该缩放值s
+	 * @param {Float} s 
+	 * @returns {Matrix3} 返回当前矩阵
+	 */
 	multiplyScalar: function ( s ) {
 
 		var te = this.elements;
@@ -164,6 +189,10 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 计算并返回矩阵的行列式
+	 * @returns 返回当前矩阵的行列式
+	 */
 	determinant: function () {
 
 		var te = this.elements;
@@ -176,6 +205,12 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 求矩阵的逆矩阵
+	 * @param {Matrix3} matrix 取逆的矩阵
+	 * @param {Boolean} throwOnDegenerate 如果设置为true，如果矩阵是退化的（如果不可逆的话），则会抛出一个错误
+	 * @returns {Matrix3} 将该矩阵的设置为matrix的逆矩阵
+	 */
 	getInverse: function ( matrix, throwOnDegenerate ) {
 
 		if ( matrix && matrix.isMatrix4 ) {
@@ -233,6 +268,10 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 将该矩阵转置
+	 * @returns {Matrix3} 返回该矩阵的转置
+	 */
 	transpose: function () {
 
 		var tmp, m = this.elements;
@@ -245,12 +284,22 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 将该矩阵设置为给定矩阵的正规矩阵Normal Matrix（左上角的3x3）。正规矩阵是矩阵m的逆矩阵inverse 的转置transpose
+	 * @param {Matrix4} matrix4 
+	 * @returns {Matrix3} 返回该矩阵
+	 */
 	getNormalMatrix: function ( matrix4 ) {
 
 		return this.setFromMatrix4( matrix4 ).getInverse( this ).transpose();
 
 	},
 
+	/**
+	 * 将该矩阵的转置矩阵设置到数组中
+	 * @param {Array} r 用于存储当前矩阵转置结果的数组
+	 * @returns {Matrix3} 返回该矩阵
+	 */
 	transposeIntoArray: function ( r ) {
 
 		var m = this.elements;
@@ -269,6 +318,17 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 使用偏移，重复，旋转和中心点位置设置UV变换矩阵
+	 * @param {Float} tx x偏移量
+	 * @param {Float} ty y偏移量
+	 * @param {Float} sx x方向的重复比例
+	 * @param {Float} sy y方向的重复比例
+	 * @param {Float} rotation 旋转（弧度）
+	 * @param {Float} cx 旋转中心x
+	 * @param {Float} cy 旋转中心y
+	 * @returns {Matrix3} 返回该矩阵
+	 */
 	setUvTransform: function ( tx, ty, sx, sy, rotation, cx, cy ) {
 
 		var c = Math.cos( rotation );
@@ -326,6 +386,11 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 判断矩阵是否相等
+	 * @param {Matrix3} matrix 
+	 * @returns 如果矩阵matrix与当前矩阵所有对应元素相同则返回true
+	 */
 	equals: function ( matrix ) {
 
 		var te = this.elements;
@@ -341,6 +406,12 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 使用基于列优先格式column-major的数组来设置该矩阵
+	 * @param {Array} array 用来存储设置元素数据的数组
+	 * @param {Integer} offset (可选参数) 数组的偏移量，默认值为 0。
+	 * @returns {Matrix3} 返回该矩阵
+	 */
 	fromArray: function ( array, offset ) {
 
 		if ( offset === undefined ) offset = 0;
@@ -355,6 +426,12 @@ Object.assign( Matrix3.prototype, {
 
 	},
 
+	/**
+	 * 使用列优先column-major格式将此矩阵的元素写入数组中
+	 * @param {Array} array (可选参数) 存储矩阵元素的数组，如果未指定会创建一个新的数组
+	 * @param {Integer} offset (可选参数) 存放矩阵元素数组的偏移量
+	 * @returns {Array} 返回数组
+	 */
 	toArray: function ( array, offset ) {
 
 		if ( array === undefined ) array = [];
