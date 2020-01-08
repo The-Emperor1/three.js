@@ -33,19 +33,22 @@ var _removedEvent = { type: 'removed' };
  * @author elephantatwork / www.elephantatwork.ch
  */
 
-function Object3D() {
+/**
+ * 构造函数
+ */
+ function Object3D() {
 
-	Object.defineProperty( this, 'id', { value: _object3DId ++ } );
+	Object.defineProperty( this, 'id', { value: _object3DId ++ } );  // 只读 —— 表示该对象实例ID的唯一数字。
 
-	this.uuid = _Math.generateUUID();
+	this.uuid = _Math.generateUUID();  // 该对象的UUID 由程序自动分配，所以不可编辑
 
-	this.name = '';
-	this.type = 'Object3D';
+	this.name = '';           // 对象的名称，可选、不必唯一。默认值是一个空字符串
+	this.type = 'Object3D';   // 该对象类型
 
-	this.parent = null;
-	this.children = [];
+	this.parent = null;       // 该对象在场景图中的父对象
+	this.children = [];       // 该对象的子对象数组
 
-	this.up = Object3D.DefaultUp.clone();
+	this.up = Object3D.DefaultUp.clone();  // 这个属性由lookAt方法所使用，例如，来决定结果的朝向。 默认值是Object3D.DefaultUp，即( 0, 1, 0 )
 
 	var position = new Vector3();
 	var rotation = new Euler();
@@ -68,50 +71,56 @@ function Object3D() {
 	quaternion._onChange( onQuaternionChange );
 
 	Object.defineProperties( this, {
+		// 表示对象局部位置的Vector3。默认值为(0, 0, 0)
 		position: {
 			configurable: true,
 			enumerable: true,
 			value: position
 		},
+		// 对象的局部旋转，以弧度来表示
 		rotation: {
 			configurable: true,
 			enumerable: true,
 			value: rotation
 		},
+		// 使用Quaternion表示的对象局部旋转
 		quaternion: {
 			configurable: true,
 			enumerable: true,
 			value: quaternion
 		},
+		// 对象的局部缩放因子。默认值是Vector3( 1, 1, 1 )
 		scale: {
 			configurable: true,
 			enumerable: true,
 			value: scale
 		},
+		// 这个值传递给着色器，用于计算物体的位置
 		modelViewMatrix: {
 			value: new Matrix4()
 		},
+		// 这个值传递给着色器，用于计算物体的光照。 它是物体的modelViewMatrix矩阵中，左上角3x3子矩阵的逆的转置矩阵。
 		normalMatrix: {
 			value: new Matrix3()
 		}
 	} );
 
-	this.matrix = new Matrix4();
-	this.matrixWorld = new Matrix4();
+	this.matrix = new Matrix4();         // 对象的局部变换
+	this.matrixWorld = new Matrix4();    // 对象的全局变换。如果该Object3D没有父对象，那么它和局部变换相同
 
-	this.matrixAutoUpdate = Object3D.DefaultMatrixAutoUpdate;
-	this.matrixWorldNeedsUpdate = false;
+	this.matrixAutoUpdate = Object3D.DefaultMatrixAutoUpdate;   // 当设置为true时会自动更新矩阵，包括计算位置矩阵（旋转或四元数），逐帧缩放，也会重新计算世界矩阵（matrixWorld）属性
+	this.matrixWorldNeedsUpdate = false;   // 当设置为true时，会计算该帧中的世界矩阵属性，然后重置该属性为false
 
-	this.layers = new Layers();
-	this.visible = true;
+	this.layers = new Layers();  // 对象的层成员关系。该对象只有在与正在使用的相机至少有一层相同时才可见
+	this.visible = true;         // 是否可见，如果为true，则对象被渲染
 
-	this.castShadow = false;
-	this.receiveShadow = false;
+	this.castShadow = false;     // 对象是否被渲染到阴影贴图中。默认值为false
+	this.receiveShadow = false;  // 材质是否接收阴影。默认值为false
 
-	this.frustumCulled = true;
-	this.renderOrder = 0;
+	this.frustumCulled = true;   // 当设置为true时，每一帧都会检查该对象是否在相机的视椎体中。否则，即使它是不可见的，对象也会得到绘制
+	this.renderOrder = 0;  // 这个值覆盖场景图中的默认的渲染顺序，即使不透明对象和透明对象保持独立顺序。 渲染顺序是由低到高来排序的，默认值为0。
 
-	this.userData = {};
+	this.userData = {};    // 用于存储Object3D自定义数据的对象。 它不应当包含对函数的引用，因为这些函数将不会被克隆
 
 }
 
@@ -127,6 +136,10 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 	onBeforeRender: function () {},
 	onAfterRender: function () {},
 
+	/**
+	 * 对当前对象应用这个变换矩阵，并更新对象的位置、旋转和缩放
+	 * @param {Matrix4} matrix 
+	 */
 	applyMatrix: function ( matrix ) {
 
 		if ( this.matrixAutoUpdate ) this.updateMatrix();
@@ -137,6 +150,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 对当前对象应用由四元数所表示的变换
+	 * @param {Quaternion} q 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	applyQuaternion: function ( q ) {
 
 		this.quaternion.premultiply( q );
@@ -145,6 +163,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 绕通过局部空间的axis轴和旋转角度设置.quaternion 
+	 * @param {Vector3} axis 局部空间中的标准化向量
+	 * @param {Float} angle 角度（弧度）
+	 */
 	setRotationFromAxisAngle: function ( axis, angle ) {
 
 		// assumes axis is normalized
@@ -153,12 +176,20 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 通过欧拉角设置.quaternion
+	 * @param {Euler} euler 指定了旋转量的欧拉角 
+	 */
 	setRotationFromEuler: function ( euler ) {
 
 		this.quaternion.setFromEuler( euler, true );
 
 	},
 
+	/**
+	 * 通过矩阵中的旋转分量来旋转设置.quaternion
+	 * @param {Matrix3} m
+	 */
 	setRotationFromMatrix: function ( m ) {
 
 		// assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
@@ -167,6 +198,10 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将所给的四元数复制到.quaternion中
+	 * @param {Quaternion} q 
+	 */
 	setRotationFromQuaternion: function ( q ) {
 
 		// assumes q is normalized
@@ -175,6 +210,12 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 在局部空间中绕着axis轴来旋转该对象
+	 * @param {Vector3} axis 局部空间中的标准化向量
+	 * @param {Float} angle 角度（弧度） 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	rotateOnAxis: function ( axis, angle ) {
 
 		// rotate object on axis in object space
@@ -188,6 +229,12 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 在世界空间中绕着axis轴来旋转该对象
+	 * @param {Vector3} axis 世界空间中的标准化向量
+	 * @param {Float} angle 角度（弧度） 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	rotateOnWorldAxis: function ( axis, angle ) {
 
 		// rotate object on axis in world space
@@ -202,24 +249,45 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 绕局部空间的X轴旋转该对象
+	 * @param {Float} angle 旋转角度（弧度）
+	 * @returns {Object3D} 返回当前对象
+	 */
 	rotateX: function ( angle ) {
 
 		return this.rotateOnAxis( _xAxis, angle );
 
 	},
 
+	/**
+	 * 绕局部空间的Y轴旋转该对象
+	 * @param {Float} angle 旋转角度（弧度）
+	 * @returns {Object3D} 返回当前对象
+	 */
 	rotateY: function ( angle ) {
 
 		return this.rotateOnAxis( _yAxis, angle );
 
 	},
 
+	/**
+	 * 绕局部空间的Z轴旋转该对象
+	 * @param {Float} angle 旋转角度（弧度）
+	 * @returns {Object3D} 返回当前对象
+	 */
 	rotateZ: function ( angle ) {
 
 		return this.rotateOnAxis( _zAxis, angle );
 
 	},
 
+	/**
+	 * 在局部空间中沿着一条轴来平移该对象
+	 * @param {Vector3} axis 世界空间中的标准化向量
+	 * @param {Float} angle 角度（弧度） 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	translateOnAxis: function ( axis, distance ) {
 
 		// translate object by distance along axis in object space
@@ -233,36 +301,67 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 沿着X轴将该对象平移distance个单位
+	 * @param {Float} distance 平移距离 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	translateX: function ( distance ) {
 
 		return this.translateOnAxis( _xAxis, distance );
 
 	},
 
+	/**
+	 * 沿着Y轴将该对象平移distance个单位
+	 * @param {Float} distance 平移距离 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	translateY: function ( distance ) {
 
 		return this.translateOnAxis( _yAxis, distance );
 
 	},
 
+	/**
+	 * 沿着Z轴将该对象平移distance个单位
+	 * @param {Float} distance 平移距离 
+	 * @returns {Object3D} 返回当前对象
+	 */
 	translateZ: function ( distance ) {
 
 		return this.translateOnAxis( _zAxis, distance );
 
 	},
 
+	/**
+	 * 将局部空间向量转换为世界空间向量
+	 * @param {Vector3} vector 一个局部向量
+	 * @returns {Vector3} 返回世界空间向量
+	 */
 	localToWorld: function ( vector ) {
 
 		return vector.applyMatrix4( this.matrixWorld );
 
 	},
 
+	/**
+	 * 将世界空间中的向量转换为局部空间向量
+	 * @param {Vector3} vector 一个世界向量 
+	 * @returns {Vector3} 返回局部空间向量
+	 */
 	worldToLocal: function ( vector ) {
 
 		return vector.applyMatrix4( _m1.getInverse( this.matrixWorld ) );
 
 	},
 
+	/**
+	 * 旋转物体使其在世界空间中面朝一个点
+	 * @param {Float} x 
+	 * @param {Float} y 
+	 * @param {Float} z 
+	 */
 	lookAt: function ( x, y, z ) {
 
 		// This method does not support objects having non-uniformly-scaled parent(s)
@@ -305,6 +404,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 添加对象到这个对象的子级，可以添加任意数量的对象。 当前传入的对象中的父级将在这里被移除，因为一个对象仅能有一个父级
+	 * @param {Object3D} object 
+	 * @returns {Object3D} 返回该对象
+	 */
 	add: function ( object ) {
 
 		if ( arguments.length > 1 ) {
@@ -349,6 +453,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 从当前对象的子级中移除对象。可以移除任意数量的对象
+	 * @param {Object3D} object 
+	 * @returns {Object3D} 返回该对象
+	 */	
 	remove: function ( object ) {
 
 		if ( arguments.length > 1 ) {
@@ -378,6 +487,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将object作为子级来添加到该对象中，同时保持该object的世界变换
+	 * @param {Object3D} object 
+	 * @returns {Object3D} 返回该对象
+	 */
 	attach: function ( object ) {
 
 		// adds object as a child of this, while maintaining the object's world transform
@@ -404,18 +518,34 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 搜索该对象的子级，返回第一个带有匹配id的子对象
+	 * @param {Integer} id 标识该对象实例的唯一数字 
+	 * @returns {Object3D} 返回该对象的id子对象
+	 */
 	getObjectById: function ( id ) {
 
 		return this.getObjectByProperty( 'id', id );
 
 	},
 
+	/**
+	 * 搜索该对象的子级，返回第一个带有匹配name的子对象
+	 * @param {String} name 用于来匹配子对象中Object3D.name属性的字符串
+	 * @returns {Object3D} 返回该对象name的子对象
+	 */
 	getObjectByName: function ( name ) {
 
 		return this.getObjectByProperty( 'name', name );
 
 	},
 
+	/**
+	 * 搜索该对象的子级，返回第一个给定的属性中包含有匹配的值的子对象
+	 * @param {String} name 将要用于查找的属性的名称 
+	 * @param {Float} value 给定的属性的值 
+	 * @returns {Object3D} 返回该对象name的子对象
+	 */
 	getObjectByProperty: function ( name, value ) {
 
 		if ( this[ name ] === value ) return this;
@@ -437,6 +567,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 返回一个表示该对象在世界空间中位置的矢量 
+	 * @param {Vector3} target 结果将被复制到这个Vector3中 
+	 * @returns {Vector3} 返回该对象在世界空间中位置的矢量
+	 */
 	getWorldPosition: function ( target ) {
 
 		if ( target === undefined ) {
@@ -452,6 +587,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 返回一个表示该对象在世界空间中旋转的四元数
+	 * @param {Quaternion} target 结果将被复制到这个target中
+	 * @returns {Quaternion} 返回该对象在世界空间中旋转的四元数
+	 */
 	getWorldQuaternion: function ( target ) {
 
 		if ( target === undefined ) {
@@ -469,6 +609,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 返回一个包含着该物体在世界空间中各个轴向上所应用的缩放因数的矢量
+	 * @param {Vector3} target 结果将被复制到这个Vector3中 
+	 * @returns {Vector3} 返回该对象在世界空间中缩放因数的矢量
+	 */
 	getWorldScale: function ( target ) {
 
 		if ( target === undefined ) {
@@ -486,6 +631,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 返回一个表示该物体在世界空间中Z轴正方向的矢量
+	 * @param {Vector3} target 结果将被复制到这个Vector3中 
+	 * @returns {Vector3} 返回该对象在世界空间中Z轴正方向的矢量
+	 */
 	getWorldDirection: function ( target ) {
 
 		if ( target === undefined ) {
@@ -503,8 +653,15 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 抽象方法，在一条被投射出的射线与这个对象之间获得交点。 在一些子类，例如Mesh, Line, and Points实现了这个方法，以用于光线投射
+	 */
 	raycast: function () {},
 
+	/**
+	 * 在对象以及后代中执行的回调函数
+	 * @param {Function} callback 回调函数
+	 */
 	traverse: function ( callback ) {
 
 		callback( this );
@@ -519,6 +676,10 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 类似traverse函数，traverseVisible的回调函数仅对可见的对象执行，不可见对象的后代将不遍历
+	 * @param {Function} callback 回调函数 
+	 */
 	traverseVisible: function ( callback ) {
 
 		if ( this.visible === false ) return;
@@ -535,6 +696,10 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 在所有的祖先中执行回调函数
+	 * @param {Function} callback 回调函数 
+	 */
 	traverseAncestors: function ( callback ) {
 
 		var parent = this.parent;
@@ -549,6 +714,9 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 根据position、quaternion、scale更新局部变换
+	 */
 	updateMatrix: function () {
 
 		this.matrix.compose( this.position, this.quaternion, this.scale );
@@ -557,6 +725,10 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 更新该对象及其后代的全局变换
+	 * @param {Boolean} force 
+	 */
 	updateMatrixWorld: function ( force ) {
 
 		if ( this.matrixAutoUpdate ) this.updateMatrix();
@@ -591,6 +763,11 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 更新该对象的全局变换
+	 * @param {Boolean} updateParents 是否更新该对象祖先的全局变换
+	 * @param {Boolean} updateChildren 是否更新该对象子代的全局变换
+	 */
 	updateWorldMatrix: function ( updateParents, updateChildren ) {
 
 		var parent = this.parent;
