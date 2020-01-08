@@ -632,7 +632,7 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 	},
 
 	/**
-	 * 返回一个表示该物体在世界空间中Z轴正方向的矢量
+	 * 返回一个能够表示当前对象所正对的世界空间方向的Vector3对象
 	 * @param {Vector3} target 结果将被复制到这个Vector3中 
 	 * @returns {Vector3} 返回该对象在世界空间中Z轴正方向的矢量
 	 */
