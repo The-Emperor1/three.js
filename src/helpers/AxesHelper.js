@@ -9,6 +9,11 @@ import { LineBasicMaterial } from '../materials/LineBasicMaterial.js';
 import { Float32BufferAttribute } from '../core/BufferAttribute.js';
 import { BufferGeometry } from '../core/BufferGeometry.js';
 
+/**
+ * 用于简单模拟3个坐标轴的对象.
+ * 红色代表 X 轴. 绿色代表 Y 轴. 蓝色代表 Z 轴.
+ * @param {Number} size (可选的) 表示代表轴的线段长度. 默认为 1
+ */
 function AxesHelper( size ) {
 
 	size = size || 1;
