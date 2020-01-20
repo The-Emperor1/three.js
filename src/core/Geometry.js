@@ -24,19 +24,22 @@ var _m1 = new Matrix4();
 var _obj = new Object3D();
 var _offset = new Vector3();
 
+/**
+ * 几何模型，所有几何模型的基类
+ */
 function Geometry() {
 
-	Object.defineProperty( this, 'id', { value: _geometryId += 2 } );
+	Object.defineProperty( this, 'id', { value: _geometryId += 2 } ); // 这个geometry实例的唯一标识 
 
-	this.uuid = _Math.generateUUID();
+	this.uuid = _Math.generateUUID();  // 当前对象实例的 UUID。 该值会被自动分配，请不要修改它
 
-	this.name = '';
-	this.type = 'Geometry';
+	this.name = '';         // 当前几何的可选别名。默认值是一个空字符串 
+	this.type = 'Geometry'; 
 
-	this.vertices = [];
-	this.colors = [];
-	this.faces = [];
-	this.faceVertexUvs = [[]];
+	this.vertices = [];     // 顶点的队列，保存了模型中每个顶点的位置信息
+	this.colors = [];       // 顶点 colors 队列，与顶点数量和顺序保持一致
+	this.faces = [];        // 描述每个顶点之间如何组成模型面的面队列。同时该队列保存面和顶点的法向量和颜色信息
+	this.faceVertexUvs = [[]];  // 面的 UV 层的队列，该队列用于将纹理和几何信息进行映射
 
 	this.morphTargets = [];
 	this.morphNormals = [];
@@ -44,20 +47,20 @@ function Geometry() {
 	this.skinWeights = [];
 	this.skinIndices = [];
 
-	this.lineDistances = [];
+	this.lineDistances = [];  // 用于保存线型几何体中每个顶点间的距离
 
-	this.boundingBox = null;
-	this.boundingSphere = null;
+	this.boundingBox = null;  // Geometry 的外边界矩形，可以通过 .computeBoundingBox() 进行计算，默认值是 null
+	this.boundingSphere = null;  // Geometry 的外边界球形，可以通过 .computeBoundingSphere() 进行计算，默认值是 null
 
 	// update flags
 
-	this.elementsNeedUpdate = false;
-	this.verticesNeedUpdate = false;
-	this.uvsNeedUpdate = false;
-	this.normalsNeedUpdate = false;
-	this.colorsNeedUpdate = false;
-	this.lineDistancesNeedUpdate = false;
-	this.groupsNeedUpdate = false;
+	this.elementsNeedUpdate = false;  // 如果faces中的数据被修改，该值需要被设置为 true
+	this.verticesNeedUpdate = false;  // 如果vertices中的数据被修改，该值需要被设置为 true
+	this.uvsNeedUpdate = false;       // 如果 faceVertexUvs中的数据被修改，该值需要被设置为 true
+	this.normalsNeedUpdate = false;   // 如果法向量队列中的数据被修改，该值需要被设置为 true
+	this.colorsNeedUpdate = false;    // 如果colors或 face3 的颜色数据被修改，该值需要被设置为 true
+	this.lineDistancesNeedUpdate = false;  // 如果 linedistances 中的数据被修改，该值需要被设置为 true
+	this.groupsNeedUpdate = false;         // 如果 face3 的 materialIndex 被修改，该值需要被设置为 true
 
 }
 
@@ -67,6 +70,11 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	isGeometry: true,
 
+	/**
+	 * 将矩阵信息直接应用于几何体顶点坐标
+	 * @param {Matrix4} matrix 
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	applyMatrix: function ( matrix ) {
 
 		var normalMatrix = new Matrix3().getNormalMatrix( matrix );
@@ -110,6 +118,12 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将几何体绕 X 轴旋转参数指定度数。该操作通常在一次处理中完成，但不会在渲染过程中处理
+	 * 使用 Object3D.rotation 对模型面片进行实时旋转处理
+	 * @param {Float} angle 旋转角度
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	rotateX: function ( angle ) {
 
 		// rotate geometry around world x-axis
@@ -122,6 +136,12 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将几何体绕 Y 轴旋转参数指定度数。该操作通常在一次处理中完成，但不会在渲染过程中处理
+	 * 使用 Object3D.rotation 对模型面片进行实时旋转处理
+	 * @param {Float} angle 旋转角度
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	rotateY: function ( angle ) {
 
 		// rotate geometry around world y-axis
@@ -134,6 +154,12 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将几何体绕 Z 轴旋转参数指定度数。该操作通常在一次处理中完成，但不会在渲染过程中处理
+	 * 使用 Object3D.rotation 对模型面片进行实时旋转处理
+	 * @param {Float} angle 旋转角度
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	rotateZ: function ( angle ) {
 
 		// rotate geometry around world z-axis
@@ -146,6 +172,14 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 移动当前几何体。该操作通常在一次处理中完成，但不会在渲染过程中处理。
+	 * 使用 Object3D.position 对模型面片进行实时移动处理。
+	 * @param {Float} x 
+	 * @param {Float} y 
+	 * @param {Float} z 
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	translate: function ( x, y, z ) {
 
 		// translate geometry
@@ -158,6 +192,14 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 缩放几何体大小。该操作通常在一次处理中完成，但不会在渲染过程中处理。
+	 * 使用 Object3D.scale 对模型面片进行实时缩放处理。
+	 * @param {Float} x 
+	 * @param {Float} y 
+	 * @param {Float} z 
+	 * @returns {Geometry} 返回当前Geometry
+	 */	
 	scale: function ( x, y, z ) {
 
 		// scale geometry
@@ -170,6 +212,12 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 该方法将几何体进行旋转。该方法一般在一次处理中完成，但不在渲染过程中执行
+	 * 一般使用 Object3D.lookAt 方法进行实时更改
+	 * @param {Vector3} vector 当前几何体朝向的世界坐标
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	lookAt: function ( vector ) {
 
 		_obj.lookAt( vector );
@@ -182,6 +230,11 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将一个 BufferGeometry 对象，转换成一个 Geometry 对象
+	 * @param {BufferGeometry} geometry 
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	fromBufferGeometry: function ( geometry ) {
 
 		var scope = this;
@@ -322,6 +375,10 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 基于外边界矩形将几何体居中
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	center: function () {
 
 		this.computeBoundingBox();
@@ -334,6 +391,10 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将当前几何体归一化, 将当前几何体居中，并且使得该几何体的外边界球半径为 1.0
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	normalize: function () {
 
 		this.computeBoundingSphere();
@@ -357,6 +418,9 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 计算所有face的normal值
+	 */
 	computeFaceNormals: function () {
 
 		var cb = new Vector3(), ab = new Vector3();
@@ -381,6 +445,10 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 通过周围面的法向量计算顶点的法向量
+	 * @param {Boolean} areaWeighted 如果该值设置为 true，则每个面的法向量对顶点法向量的影响按照面的面积大小来计算。默认值为 true.
+	 */
 	computeVertexNormals: function ( areaWeighted ) {
 
 		if ( areaWeighted === undefined ) areaWeighted = true;
@@ -473,6 +541,9 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 计算 flat vertex normals 值。 该方法会将顶点法向量的值赋值为相应面的法向量值
+	 */
 	computeFlatVertexNormals: function () {
 
 		var f, fl, face;
@@ -626,6 +697,9 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 计算当前几何体的外边界矩形。该方法会更新 Geometry.boundingBox 属性值
+	 */
 	computeBoundingBox: function () {
 
 		if ( this.boundingBox === null ) {
@@ -638,6 +712,9 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 计算当前几何体的外边界球。该方法会更新 Geometry.boundingSphere 属性值
+	 */
 	computeBoundingSphere: function () {
 
 		if ( this.boundingSphere === null ) {
@@ -650,6 +727,12 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将两个几何体，或一个几何体和一个从对象中通过变换获得的几何体进行合并
+	 * @param {Geometry} geometry 
+	 * @param {Matrix4} matrix 
+	 * @param {Integer} materialIndexOffset 
+	 */
 	merge: function ( geometry, matrix, materialIndexOffset ) {
 
 		if ( ! ( geometry && geometry.isGeometry ) ) {
@@ -770,6 +853,10 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 将参数指定的面片信息与当前几何体进行合并。同样会使用到参数 mesh 的变换
+	 * @param {Mesh} mesh 
+	 */
 	mergeMesh: function ( mesh ) {
 
 		if ( ! ( mesh && mesh.isMesh ) ) {
@@ -791,6 +878,10 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 	 * and faces' vertices are updated.
 	 */
 
+	 /**
+	  * 通过 hashmap 检查重复的顶点
+	  * 重复的顶点将会被移除，面的顶点信息会被更新
+	  */
 	mergeVertices: function () {
 
 		var verticesMap = {}; // Hashmap for looking up vertices by position coordinates (and making sure they are unique)
@@ -874,6 +965,11 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 通过点队列设置一个 Geometry 中的顶点
+	 * @param {Array} points
+	 * @returns {Geometry} 返回当前Geometry
+	 */
 	setFromPoints: function ( points ) {
 
 		this.vertices = [];
@@ -889,6 +985,10 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	},
 
+	/**
+	 * 通过材质索引对面队列进行排序
+	 * 对于复杂且有多个材质的几何体，该操作可以有效减少 draw call 从而提升性能
+	 */
 	sortFacesByMaterialIndex: function () {
 
 		var faces = this.faces;
